@@ -12,9 +12,20 @@ interface AuditEvent {
 // must not knock out the primary action it observes.
 export async function writeAudit(event: AuditEvent): Promise<void> {
   try {
+    // A stale JWT (e.g. DB was reseeded but the browser still holds an old
+    // cookie) can carry a `sub` that no longer matches a User row. Resolve
+    // the FK to null instead of failing the insert with P2003.
+    let userId: string | null = event.userId;
+    if (userId) {
+      const exists = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      });
+      if (!exists) userId = null;
+    }
     await prisma.auditLog.create({
       data: {
-        userId: event.userId,
+        userId,
         action: event.action,
         targetType: event.targetType ?? null,
         targetId: event.targetId ?? null,

@@ -84,23 +84,34 @@ export default function TreePage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold">{vi.tree.title}</h2>
-        <div className="flex items-center gap-2 text-sm">
-          <div className="inline-flex overflow-hidden rounded-md border border-stone-300">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="font-serif text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">
+            {vi.tree.title}
+          </h2>
+          <p className="text-sm text-stone-500">
+            {loading ? vi.common.loading : `${persons.length} nhân vật`}
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+          <div className="inline-flex w-full overflow-hidden rounded-lg border border-stone-300 bg-white shadow-soft sm:w-auto">
             <button
-              className={`px-3 py-1 ${
-                orientation === 'vertical' ? 'bg-bark-600 text-white' : 'bg-white text-stone-700'
+              type="button"
+              className={`flex-1 px-3 py-2 text-sm transition-colors sm:flex-none ${
+                orientation === 'vertical'
+                  ? 'bg-bark-600 text-white'
+                  : 'bg-white text-stone-700 hover:bg-stone-50'
               }`}
               onClick={() => setOrientation('vertical')}
             >
               {vi.tree.vertical}
             </button>
             <button
-              className={`px-3 py-1 ${
+              type="button"
+              className={`flex-1 px-3 py-2 text-sm transition-colors sm:flex-none ${
                 orientation === 'horizontal'
                   ? 'bg-bark-600 text-white'
-                  : 'bg-white text-stone-700'
+                  : 'bg-white text-stone-700 hover:bg-stone-50'
               }`}
               onClick={() => setOrientation('horizontal')}
             >
@@ -108,9 +119,10 @@ export default function TreePage() {
             </button>
           </div>
           <select
-            className="input w-56"
+            className="input w-full sm:w-64"
             value={rootId}
             onChange={(e) => setRootId(e.target.value)}
+            aria-label={vi.tree.selectRoot}
           >
             <option value="">{vi.tree.selectRoot} (mặc định)</option>
             {rootChoices.map((p) => (
@@ -124,8 +136,14 @@ export default function TreePage() {
 
       <div
         ref={containerRef}
-        className="card relative h-[70vh] w-full overflow-hidden bg-bark-50/40"
+        className="card relative h-[calc(100vh-260px)] min-h-[420px] w-full overflow-hidden bg-paper"
       >
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute right-4 top-4 select-none font-serif text-[8rem] leading-none text-bark-700/[0.05] sm:text-[11rem]"
+        >
+          譜
+        </span>
         {loading ? (
           <div className="flex h-full items-center justify-center text-stone-500">
             {vi.common.loading}
@@ -167,11 +185,11 @@ export default function TreePage() {
                       ? 'Chưa rõ cha mẹ'
                       : '';
               const fill =
-                gender === 'Nam' ? '#bfdbfe' : gender === 'Nu' ? '#fbcfe8' : '#e7e5e4';
+                gender === 'Nam' ? '#dbeafe' : gender === 'Nu' ? '#fce7f3' : '#f5f5f4';
               const stroke =
-                gender === 'Nam' ? '#1d4ed8' : gender === 'Nu' ? '#be185d' : '#57534e';
+                gender === 'Nam' ? '#2563eb' : gender === 'Nu' ? '#db2777' : '#78716c';
               const extraLines = (spouses ? 1 : 0) + (unknownLabel ? 1 : 0);
-              const height = 28 + extraLines * 16;
+              const height = 30 + extraLines * 16;
               return (
                 <g
                   onClick={() => {
@@ -180,14 +198,15 @@ export default function TreePage() {
                   style={{ cursor: id ? 'pointer' : 'default' }}
                 >
                   <rect
-                    x={-90}
+                    x={-92}
                     y={-height / 2}
-                    width={180}
+                    width={184}
                     height={height}
-                    rx={6}
-                    ry={6}
+                    rx={10}
+                    ry={10}
                     fill={fill}
                     stroke={stroke}
+                    strokeWidth={1.2}
                   />
                   <text
                     fill="#1c1917"
@@ -196,7 +215,7 @@ export default function TreePage() {
                     dominantBaseline="middle"
                     y={extraLines === 0 ? 0 : -extraLines * 8}
                     fontSize={13}
-                    style={{ fontWeight: 500 }}
+                    style={{ fontWeight: 600 }}
                   >
                     {rd3.nodeDatum.name}
                   </text>

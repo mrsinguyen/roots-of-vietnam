@@ -18,8 +18,18 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['"Be Vietnam Pro"', 'system-ui', 'sans-serif'],
+        sans: ['"Be Vietnam Pro"', 'system-ui', '-apple-system', 'sans-serif'],
         serif: ['"Noto Serif"', 'Georgia', 'serif'],
+      },
+      boxShadow: {
+        soft: '0 1px 2px rgba(28, 25, 23, 0.04), 0 1px 3px rgba(28, 25, 23, 0.06)',
+        lift: '0 6px 16px -6px rgba(28, 25, 23, 0.18), 0 2px 6px rgba(28, 25, 23, 0.06)',
+      },
+      borderRadius: {
+        xl: '0.875rem',
+      },
+      screens: {
+        xs: '420px',
       },
     },
   },

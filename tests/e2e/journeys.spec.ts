@@ -32,7 +32,7 @@ async function login(
 test.describe('admin onboarding journey', () => {
   test('logs in and lands on the tree page with rendered nodes', async ({ page }) => {
     await login(page);
-    await expect(page.getByText('Cây gia phả').first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Cây gia phả' })).toBeVisible();
     // 22 seeded persons, depth-3 collapse — expect a non-empty count.
     await page.waitForSelector('.rd3t-node', { timeout: 10_000 });
     const count = await page.locator('.rd3t-node').count();
@@ -41,16 +41,20 @@ test.describe('admin onboarding journey', () => {
 
   test('can navigate to the person list and see the seed family', async ({ page }) => {
     await login(page);
-    await page.getByRole('link', { name: 'Danh sách' }).click();
+    // On mobile the primary nav lives in a bottom tab bar exposed via aria-label;
+    // on desktop it lives in the header. .first() picks whichever is visible at
+    // the current viewport.
+    await page.getByRole('link', { name: 'Danh sách' }).first().click();
     await page.waitForURL(/\/persons/);
-    await expect(page.getByText(/nhân vật/)).toBeVisible();
+    // Count headline like "22 nhân vật"; avoid the "Thêm nhân vật" CTA button.
+    await expect(page.getByText(/\d+ nhân vật/)).toBeVisible();
   });
 });
 
 test.describe('diacritic-insensitive search journey', () => {
   test('finds "Nguyễn Văn Thái" by typing without diacritics', async ({ page }) => {
     await login(page);
-    await page.getByRole('link', { name: 'Danh sách' }).click();
+    await page.getByRole('link', { name: 'Danh sách' }).first().click();
     await page.waitForURL(/\/persons/);
     await page.getByPlaceholder(/Tìm theo họ tên/).fill('nguyen van thai');
     await expect(page.getByText('Nguyễn Văn Thái').first()).toBeVisible();
@@ -71,6 +75,8 @@ test.describe('role boundary journey', () => {
       headers: { cookie },
     });
     await login(page, 'viewer_e2e', 'longenoughpw1');
+    // Admin link must be absent in both the desktop header and the mobile bottom
+    // tab bar — the count should stay at zero across viewports.
     await expect(page.getByRole('link', { name: 'Quản trị' })).toHaveCount(0);
   });
 });

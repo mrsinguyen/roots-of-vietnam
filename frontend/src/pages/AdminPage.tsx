@@ -113,57 +113,68 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">{vi.admin.title}</h2>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="font-serif text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">
+          {vi.admin.title}
+        </h2>
         <Link className="btn-secondary" to="/admin/audit">
           Nhật ký hoạt động
         </Link>
       </div>
 
-      <section className="card p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold">{vi.admin.backup}</h3>
-          <div className="flex gap-2">
-            <button className="btn-secondary" onClick={onMediaZip} disabled={creatingZip}>
+      <section className="card p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
+            {vi.admin.backup}
+          </h3>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={onMediaZip}
+              disabled={creatingZip}
+            >
               {creatingZip ? vi.common.loading : 'Sao lưu hình ảnh (.zip)'}
             </button>
-            <button className="btn-primary" onClick={onBackup} disabled={creatingBackup}>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={onBackup}
+              disabled={creatingBackup}
+            >
               {creatingBackup ? vi.common.loading : vi.admin.backupNow}
             </button>
           </div>
         </div>
-        <div className="mt-3 overflow-hidden rounded-md border border-stone-200">
-          <table className="min-w-full divide-y divide-stone-200 text-sm">
-            <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500">
-              <tr>
-                <th className="px-3 py-2">Tệp</th>
-                <th className="px-3 py-2">Kích thước</th>
-                <th className="px-3 py-2">Thời điểm</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100">
-              {backups.map((b) => (
-                <tr key={b.filename}>
-                  <td className="px-3 py-2 font-mono text-xs">{b.filename}</td>
-                  <td className="px-3 py-2">{Math.round(b.sizeBytes / 1024)} KB</td>
-                  <td className="px-3 py-2">{new Date(b.createdAt).toLocaleString('vi-VN')}</td>
-                </tr>
-              ))}
-              {backups.length === 0 && (
-                <tr>
-                  <td colSpan={3} className="px-3 py-4 text-center text-stone-400">
-                    {vi.common.empty}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <ul className="mt-3 divide-y divide-stone-100 overflow-hidden rounded-lg border border-stone-200">
+          {backups.map((b) => (
+            <li
+              key={b.filename}
+              className="grid grid-cols-1 gap-1 px-3 py-2.5 text-sm md:grid-cols-3 md:items-center"
+            >
+              <div className="font-mono text-xs text-stone-700 break-all">{b.filename}</div>
+              <div className="text-xs text-stone-500 md:text-sm">
+                {Math.round(b.sizeBytes / 1024)} KB
+              </div>
+              <div className="text-xs text-stone-500 md:text-sm">
+                {new Date(b.createdAt).toLocaleString('vi-VN')}
+              </div>
+            </li>
+          ))}
+          {backups.length === 0 && (
+            <li className="px-3 py-6 text-center text-sm text-stone-400">{vi.common.empty}</li>
+          )}
+        </ul>
       </section>
 
-      <section className="card p-4">
-        <h3 className="font-semibold">{vi.admin.users}</h3>
-        <form onSubmit={onCreateUser} className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
+      <section className="card p-4 sm:p-5">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
+          {vi.admin.users}
+        </h3>
+        <form
+          onSubmit={onCreateUser}
+          className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+        >
           <input
             className="input"
             placeholder={vi.auth.username}
@@ -185,6 +196,7 @@ export default function AdminPage() {
             className="input"
             value={newRole}
             onChange={(e) => setNewRole(e.target.value as Role)}
+            aria-label={vi.admin.role}
           >
             {(Object.keys(ROLE_LABEL) as Role[]).map((r) => (
               <option key={r} value={r}>
@@ -192,43 +204,38 @@ export default function AdminPage() {
               </option>
             ))}
           </select>
-          <button className="btn-primary" disabled={savingUser}>
+          <button type="submit" className="btn-primary" disabled={savingUser}>
             {savingUser ? vi.common.loading : vi.admin.addUser}
           </button>
         </form>
-        <div className="mt-4 overflow-hidden rounded-md border border-stone-200">
-          <table className="min-w-full divide-y divide-stone-200 text-sm">
-            <thead className="bg-stone-50 text-left text-xs uppercase text-stone-500">
-              <tr>
-                <th className="px-3 py-2">{vi.auth.username}</th>
-                <th className="px-3 py-2">{vi.admin.role}</th>
-                <th className="px-3 py-2">Tạo lúc</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100">
-              {users.map((u) => (
-                <tr key={u.id}>
-                  <td className="px-3 py-2">{u.username}</td>
-                  <td className="px-3 py-2">
-                    <select
-                      className="input w-40"
-                      value={u.role}
-                      onChange={(e) => onRoleChange(u, e.target.value as Role)}
-                      disabled={u.id === user?.id}
-                    >
-                      {(Object.keys(ROLE_LABEL) as Role[]).map((r) => (
-                        <option key={r} value={r}>
-                          {ROLE_LABEL[r]}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-3 py-2">{new Date(u.createdAt).toLocaleString('vi-VN')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul className="mt-4 divide-y divide-stone-100 overflow-hidden rounded-lg border border-stone-200">
+          {users.map((u) => (
+            <li
+              key={u.id}
+              className="flex flex-col gap-2 px-3 py-3 text-sm md:flex-row md:items-center md:gap-4"
+            >
+              <div className="flex-1">
+                <div className="font-medium text-stone-900">{u.username}</div>
+                <div className="text-xs text-stone-500">
+                  {new Date(u.createdAt).toLocaleString('vi-VN')}
+                </div>
+              </div>
+              <select
+                className="input w-full md:w-44"
+                value={u.role}
+                onChange={(e) => onRoleChange(u, e.target.value as Role)}
+                disabled={u.id === user?.id}
+                aria-label={`${vi.admin.role} cho ${u.username}`}
+              >
+                {(Object.keys(ROLE_LABEL) as Role[]).map((r) => (
+                  <option key={r} value={r}>
+                    {ROLE_LABEL[r]}
+                  </option>
+                ))}
+              </select>
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );
