@@ -5,7 +5,7 @@ import {
   COOKIE_NAME,
   signToken,
   revokeToken,
-  verifyPassword,
+  verifyPasswordOrDummy,
 } from '../lib/auth.js';
 import { requireAuth } from '../middleware/auth.js';
 import { env } from '../env.js';
@@ -24,18 +24,27 @@ const loginSchema = z.object({
 });
 
 function clientIp(req: import('express').Request): string {
-  const fwd = req.headers['x-forwarded-for'];
-  if (typeof fwd === 'string' && fwd.length > 0) return fwd.split(',')[0]!.trim();
-  return req.socket.remoteAddress ?? 'unknown';
+  // `req.ip` honors `app.set('trust proxy', n)` configured in server.ts.
+  // When TRUST_PROXY=0 (default) it returns the direct socket peer, ignoring
+  // any client-supplied X-Forwarded-For. This means an internet-exposed
+  // instance cannot have its login rate-limit defeated by spoofed XFF.
+  return req.ip ?? req.socket.remoteAddress ?? 'unknown';
+}
+
+function cookieOptions(): import('express').CookieOptions {
+  return {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: env.NODE_ENV === 'production',
+    path: '/',
+    ...(env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {}),
+  };
 }
 
 function setAuthCookie(res: import('express').Response, token: string): void {
   res.cookie(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: env.NODE_ENV === 'production',
+    ...cookieOptions(),
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: '/',
   });
 }
 
@@ -61,7 +70,10 @@ router.post('/login', async (req, res) => {
   }
   const { username, password } = parsed.data;
   const user = await prisma.user.findUnique({ where: { username } });
-  if (!user || !(await verifyPassword(password, user.passwordHash))) {
+  // Always spend the bcrypt cost — even when the username is unknown — so the
+  // response time doesn't betray which usernames exist.
+  const ok = await verifyPasswordOrDummy(password, user?.passwordHash ?? null);
+  if (!user || !ok) {
     await writeAudit({
       userId: user?.id ?? null,
       action: 'auth.login.failure',
@@ -99,7 +111,7 @@ router.post('/logout', async (req, res) => {
   } catch {
     // ignore — clearing the cookie is the user-visible effect
   }
-  res.clearCookie(COOKIE_NAME, { path: '/' });
+  res.clearCookie(COOKIE_NAME, cookieOptions());
   res.json({ ok: true });
 });
 
@@ -114,12 +126,13 @@ router.get('/me', requireAuth, async (req, res) => {
     return;
   }
   // Sliding refresh: re-issue a fresh cookie on every authenticated /me hit so an
-  // active session keeps rolling forward without re-prompting login.
+  // active session keeps rolling forward without re-prompting login. The old
+  // jti is revoked at the same time so a stolen token cannot be refreshed in
+  // parallel with the legitimate session.
+  const oldJti = req.user!.jti;
   const { token } = signToken({ sub: user.id, username: user.username, role: user.role as Role });
+  if (oldJti) revokeToken(oldJti);
   setAuthCookie(res, token);
-  // The old token's jti is no longer reachable from the cookie; revoking it would
-  // require server-side state we don't keep. The new jti supersedes it for any
-  // further use by the same browser.
   res.json({ user });
 });
 

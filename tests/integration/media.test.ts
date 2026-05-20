@@ -109,6 +109,21 @@ describe('POST /api/media/:personId', () => {
       .set('Cookie', editor.cookie);
     expect(res.status).toBe(400);
   });
+
+  it('stores the extension from the MIME allowlist, ignoring originalname', async () => {
+    // Attack vector: client lies that an SVG is image/png. Without
+    // server-controlled extensions, the file would be saved as .svg and
+    // could execute when served from /uploads.
+    const editor = await loginAs(app, 'editor');
+    const p = await createPerson({});
+    const res = await request(app)
+      .post(`/api/media/${p.id}`)
+      .set('Cookie', editor.cookie)
+      .attach('file', tinyPng(), { filename: 'evil.svg', contentType: 'image/png' });
+    expect(res.status).toBe(201);
+    expect(res.body.filePath).toMatch(/\.png$/);
+    expect(res.body.filePath).not.toMatch(/\.svg/);
+  });
 });
 
 describe('DELETE /api/media/:id', () => {

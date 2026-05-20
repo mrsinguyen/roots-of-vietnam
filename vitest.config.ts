@@ -28,6 +28,7 @@ export default defineConfig({
     ],
     environment: 'node',
     setupFiles: ['./tests/helpers/setup.ts'],
+    globalSetup: ['./tests/helpers/globalSetup.ts'],
     include: ['tests/unit/**/*.test.ts', 'tests/unit/**/*.test.tsx', 'tests/integration/**/*.test.ts', 'tests/component/**/*.test.tsx'],
     exclude: ['node_modules', 'tests/e2e/**', '**/dist/**'],
     testTimeout: 30000,

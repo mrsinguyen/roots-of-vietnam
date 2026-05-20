@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../prisma.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { writeAudit } from '../lib/audit.js';
 
 const router = Router();
 
@@ -38,6 +39,13 @@ router.post('/', requireRole('admin', 'editor'), async (req, res) => {
       marriageDate: marriageDate ? new Date(marriageDate) : null,
     },
   });
+  await writeAudit({
+    userId: req.user?.sub ?? null,
+    action: 'marriage.create',
+    targetType: 'Marriage',
+    targetId: created.id,
+    diff: { after: created },
+  });
   res.status(201).json(created);
 });
 
@@ -47,7 +55,15 @@ router.delete('/:id', requireRole('admin', 'editor'), async (req, res) => {
     res.status(400).json({ error: 'Thiếu id' });
     return;
   }
+  const existing = await prisma.marriage.findUnique({ where: { id } });
   await prisma.marriage.delete({ where: { id } });
+  await writeAudit({
+    userId: req.user?.sub ?? null,
+    action: 'marriage.delete',
+    targetType: 'Marriage',
+    targetId: id,
+    diff: { before: existing },
+  });
   res.json({ ok: true });
 });
 

@@ -9,7 +9,7 @@ family tree (gia phả). Built for any Vietnamese household — bring your own
 surname, branches, and stories.
 
 - **Frontend** — React 18 · Vite · TypeScript · TailwindCSS · `react-d3-tree` · `vite-plugin-pwa`
-- **Backend** — Node 24 LTS · Express · Prisma · SQLite
+- **Backend** — Node 24 LTS · Express · Prisma · SQLite *or* PostgreSQL (selectable via `DB_PROVIDER`)
 - **Auth** — JWT in an httpOnly cookie · bcrypt cost 12 · in-memory denylist on logout · login rate-limit
 - **Offline** — Workbox (SWR for the API, CacheFirst for `/uploads`) backed by IndexedDB via `idb-keyval`
 
@@ -18,8 +18,13 @@ surname, branches, and stories.
 ```bash
 pnpm install
 cp .env.example .env                   # bootstraps backend + frontend env
+
+# SQLite (default, zero-setup):
 pnpm --filter backend migrate          # creates database/roots.db
-pnpm --filter backend prisma:generate  # safe to re-run any time
+# …or PostgreSQL (set DB_PROVIDER=postgresql and DATABASE_URL=postgresql://… in .env first):
+# DB_PROVIDER=postgresql pnpm --filter backend migrate
+
+pnpm --filter backend prisma:generate  # honors DB_PROVIDER; re-run after switching providers
 pnpm seed                              # admin user + 22-person demo family
 pnpm dev                               # backend :3001, frontend :5173
 ```
@@ -42,9 +47,10 @@ UI or rewriting [`backend/prisma/seed.ts`](backend/prisma/seed.ts).
 ```text
 roots-of-vietnam/
 ├── frontend/    Vite React app · PWA · Tailwind · react-d3-tree
-├── backend/     Express + Prisma. Schema at backend/prisma/schema.prisma
+├── backend/     Express + Prisma. Schemas at backend/prisma/schema.prisma (sqlite)
+│                and backend/prisma/postgres/schema.prisma (postgresql) — kept in sync.
 ├── shared/      Cross-package TypeScript types (Person, Role, …)
-├── database/    SQLite file (roots.db). Untracked.
+├── database/    SQLite file (roots.db) when DB_PROVIDER=sqlite. Untracked.
 ├── uploads/     Local media. Served at /uploads/*. Untracked.
 ├── backups/     JSON exports + media zips. Untracked.
 ├── docker/      docker-compose for one-shot local boot
@@ -124,7 +130,7 @@ flowchart LR
   subgraph Server
     EXP[Express API<br/>JWT cookie + zod]
     PRISMA[Prisma Client]
-    SQL[(SQLite<br/>database/roots.db)]
+    SQL[("SQLite or PostgreSQL<br/>chosen by DB_PROVIDER")]
     UP[/uploads dir/]
     BK[/backups dir/]
     AUD[(AuditLog table)]
@@ -148,9 +154,10 @@ Run from the repository root unless noted.
 | `pnpm build`                                    | Builds both packages                                        |
 | `pnpm seed`                                     | Re-seeds the demo family (idempotent — uses `upsert`)       |
 | `pnpm typecheck`                                | Recursive TypeScript checks across workspaces               |
-| `pnpm --filter backend migrate`                 | `prisma migrate dev`                                        |
-| `pnpm --filter backend migrate:deploy`          | Apply migrations against a pre-existing database            |
-| `pnpm --filter backend prisma:generate`         | Regenerates the Prisma client                               |
+| `pnpm --filter backend migrate`                 | `prisma migrate dev` against the active provider (`DB_PROVIDER`)     |
+| `pnpm --filter backend migrate:deploy`          | Apply migrations against a pre-existing database                     |
+| `pnpm --filter backend prisma:generate`         | Regenerates the Prisma client to match `DB_PROVIDER`                 |
+| `pnpm check:schemas`                            | Fails if sqlite + postgres `schema.prisma` files drift               |
 | `cd backend && pnpm exec tsx --env-file=../.env scripts/stress-seed.ts` | Adds a 200-person stress cohort under the thủy tổ |
 | `cd backend && pnpm exec tsx --env-file=../.env scripts/prune_test.ts`  | Asserts rolling-10 backup retention                |
 
@@ -183,8 +190,9 @@ Mounts `database/`, `uploads/`, and `backups/` into the host for persistence.
 ## What's out of scope (today)
 
 GEDCOM import / export, OCR, real-time multi-user collab, approval workflows,
-PostgreSQL / MySQL adapters, cemetery maps, QR codes, AI features. Phase 3
-candidates are tracked in [`CHANGELOG.md`](CHANGELOG.md#unreleased).
+MySQL adapter, cemetery maps, QR codes, AI features. Phase 3 candidates are
+tracked in [`CHANGELOG.md`](CHANGELOG.md#unreleased). (PostgreSQL is now
+supported via `DB_PROVIDER=postgresql`.)
 
 ## License
 

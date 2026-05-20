@@ -101,4 +101,46 @@ describe('POST /api/backup/restore', () => {
       .send({ schemaVersion: 'two' });
     expect(res.status).toBe(400);
   });
+
+  it('refuses to persist media rows whose filePath is not under /uploads/', async () => {
+    const admin = await loginAs(app, 'admin');
+    const prisma = await getPrisma();
+    const person = await createPerson({ fullName: 'Carrier' });
+    const malicious = {
+      schemaVersion: 2,
+      exportedAt: new Date().toISOString(),
+      counts: { persons: 1, marriages: 0, branches: 0, media: 2 },
+      persons: [
+        {
+          id: person.id,
+          fullName: person.fullName,
+          nameNormalized: person.nameNormalized,
+          gender: person.gender,
+          generation: person.generation,
+          createdAt: person.createdAt,
+          updatedAt: person.updatedAt,
+        },
+      ],
+      marriages: [],
+      branches: [],
+      media: [
+        // Attempted XSS: would render as a clickable javascript: link without the guard.
+        { id: 'm-bad', personId: person.id, filePath: 'javascript:alert(1)', type: 'image' },
+        // Path-traversal attempt.
+        { id: 'm-trav', personId: person.id, filePath: '/uploads/../../etc/passwd', type: 'image' },
+        // Legitimate row should still land.
+        { id: 'm-ok', personId: person.id, filePath: '/uploads/123-abc.jpg', type: 'image' },
+      ],
+    };
+    const res = await request(app)
+      .post('/api/backup/restore?force=true')
+      .set('Cookie', admin.cookie)
+      .send(malicious);
+    expect(res.status).toBe(200);
+    const stored = await prisma.media.findMany({ orderBy: { id: 'asc' } });
+    expect(stored.map((m) => m.filePath)).toEqual(['/uploads/123-abc.jpg']);
+    const missing = res.body.missingMedia.map((m: { id: string }) => m.id);
+    expect(missing).toContain('m-bad');
+    expect(missing).toContain('m-trav');
+  });
 });

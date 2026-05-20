@@ -6,13 +6,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **PostgreSQL support** as a parallel database provider. Set `DB_PROVIDER=postgresql`
+  + a `postgresql://…` `DATABASE_URL` to use Postgres; `DB_PROVIDER=sqlite` (default)
+  keeps the existing zero-setup SQLite path. Two `schema.prisma` files
+  (`backend/prisma/schema.prisma`, `backend/prisma/postgres/schema.prisma`) kept
+  byte-identical by `pnpm check:schemas` (chained into `pnpm test`). Test harness
+  creates a per-fork `test_<hex>` schema and drops them after the suite via
+  `tests/helpers/globalSetup.ts`.
+
 ### Ideas
 
 - GEDCOM import / export.
 - OCR for scanned hand-written records.
 - Real-time multi-user collaboration with conflict resolution.
 - Approval workflow before a mutation lands in the public tree.
-- PostgreSQL adapter behind an `OPS_DB` env var.
+- MySQL adapter (PostgreSQL now supported via `DB_PROVIDER=postgresql`).
 - Cemetery maps with media pinned to coordinates.
 - QR codes on profile pages for headstones.
 

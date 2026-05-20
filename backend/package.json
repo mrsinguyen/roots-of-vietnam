@@ -8,9 +8,9 @@
     "build": "tsc -p tsconfig.json",
     "start": "node --env-file=../.env dist/server.js",
     "seed": "tsx --env-file=../.env prisma/seed.ts",
-    "migrate": "node scripts/run-prisma.mjs migrate dev --schema=prisma/schema.prisma",
-    "migrate:deploy": "node scripts/run-prisma.mjs migrate deploy --schema=prisma/schema.prisma",
-    "prisma:generate": "node scripts/run-prisma.mjs generate --schema=prisma/schema.prisma",
+    "migrate": "node scripts/run-prisma.mjs migrate dev",
+    "migrate:deploy": "node scripts/run-prisma.mjs migrate deploy",
+    "prisma:generate": "node scripts/run-prisma.mjs generate",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -20,6 +20,7 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "express": "^4.21.2",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "zod": "^3.24.1"

@@ -2,12 +2,13 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../prisma.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { writeAudit } from '../lib/audit.js';
 
 const router = Router();
 
 const branchSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().nullish(),
+  name: z.string().min(1).max(120),
+  description: z.string().max(2_000).nullish(),
 });
 
 router.use(requireAuth);
@@ -25,6 +26,13 @@ router.post('/', requireRole('admin', 'editor'), async (req, res) => {
   }
   const created = await prisma.branch.create({
     data: { name: parsed.data.name, description: parsed.data.description ?? null },
+  });
+  await writeAudit({
+    userId: req.user?.sub ?? null,
+    action: 'branch.create',
+    targetType: 'Branch',
+    targetId: created.id,
+    diff: { after: created },
   });
   res.status(201).json(created);
 });

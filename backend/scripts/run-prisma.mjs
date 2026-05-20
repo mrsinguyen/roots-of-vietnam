@@ -29,7 +29,22 @@ if (fs.existsSync(envPath)) {
   }
 }
 
-const child = spawn('prisma', process.argv.slice(2), {
+// Pick the right schema based on DB_PROVIDER. Default sqlite preserves
+// existing behavior; postgresql swaps to the mirrored schema in prisma/postgres/.
+// If the caller already passed --schema=..., don't override it.
+const provider = (process.env.DB_PROVIDER ?? 'sqlite').toLowerCase();
+if (provider !== 'sqlite' && provider !== 'postgresql') {
+  console.error(`Unsupported DB_PROVIDER=${provider}. Use 'sqlite' or 'postgresql'.`);
+  process.exit(1);
+}
+const defaultSchema =
+  provider === 'postgresql' ? 'prisma/postgres/schema.prisma' : 'prisma/schema.prisma';
+
+const cliArgs = process.argv.slice(2);
+const hasSchemaArg = cliArgs.some((a) => a === '--schema' || a.startsWith('--schema='));
+const finalArgs = hasSchemaArg ? cliArgs : [...cliArgs, `--schema=${defaultSchema}`];
+
+const child = spawn('prisma', finalArgs, {
   stdio: 'inherit',
   shell: process.platform === 'win32',
   env: process.env,

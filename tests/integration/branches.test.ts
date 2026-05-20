@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
-import { buildApp, truncateAll } from '../helpers/app';
+import { buildApp, getPrisma, truncateAll } from '../helpers/app';
 import { loginAs } from '../helpers/auth';
 import { createBranch } from '../factories';
 
@@ -52,5 +52,17 @@ describe('/api/branches', () => {
       .set('Cookie', editor.cookie)
       .send({ name: '' });
     expect(res.status).toBe(400);
+  });
+
+  it('POST writes a branch.create audit row', async () => {
+    const editor = await loginAs(app, 'editor');
+    const prisma = await getPrisma();
+    await request(app)
+      .post('/api/branches')
+      .set('Cookie', editor.cookie)
+      .send({ name: 'Audited chi' })
+      .expect(201);
+    const rows = await prisma.auditLog.findMany({ where: { targetType: 'Branch' } });
+    expect(rows.map((r) => r.action)).toEqual(['branch.create']);
   });
 });
