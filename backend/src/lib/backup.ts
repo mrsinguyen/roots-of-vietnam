@@ -273,6 +273,16 @@ export async function restoreDump(
       const filePath = asStr(md['filePath']);
       const type = asStr(md['type']);
       if (!id || !personId || !filePath || !type) continue;
+      // A backup file is operator-supplied input. Refuse anything that
+      // doesn't look like a path produced by our own media route — this is
+      // the only thing standing between a malicious backup and a stored
+      // `javascript:`/`data:` href that would later render as a clickable
+      // link on the profile page. Requires `<basename>.<ext>` so a value of
+      // bare dots (e.g. `..`) cannot slip through.
+      if (!/^\/uploads\/[A-Za-z0-9_-]+\.[A-Za-z0-9]+$/.test(filePath)) {
+        missingMedia.push({ id, filePath, reason: 'missing' });
+        continue;
+      }
       await tx.media.create({
         data: {
           id,

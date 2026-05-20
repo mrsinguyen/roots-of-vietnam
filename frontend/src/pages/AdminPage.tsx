@@ -190,7 +190,7 @@ export default function AdminPage() {
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             required
-            minLength={8}
+            minLength={10}
           />
           <select
             className="input"

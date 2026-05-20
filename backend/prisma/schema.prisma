@@ -11,49 +11,49 @@ datasource db {
 }
 
 model Person {
-  id           String    @id @default(cuid())
-  fullName     String
+  id             String  @id @default(cuid())
+  fullName       String
   // Lowercased, diacritic-stripped fullName so search is diacritic-insensitive.
   // Maintained by the application on every write.
   nameNormalized String  @default("")
   // Vietnamese honorific shown before the name (Cụ, Ông, Bà, Cố, …).
-  honorific    String?
+  honorific      String?
   // Gender stored as text: "Nam" | "Nu" | "Khac"
-  gender       String
+  gender         String
   // Partial-date support: year required for a known date, month and day optional.
-  birthYear    Int?
-  birthMonth   Int?
-  birthDay     Int?
-  deathYear    Int?
-  deathMonth   Int?
-  deathDay     Int?
+  birthYear      Int?
+  birthMonth     Int?
+  birthDay       Int?
+  deathYear      Int?
+  deathMonth     Int?
+  deathDay       Int?
   // Free-text âm lịch (lunar) dates shown alongside the solar values.
   birthDateLunar String?
   deathDateLunar String?
-  biography    String?
-  occupation   String?
-  burialPlace  String?
-  notes        String?
-  generation   Int       @default(1)
+  biography      String?
+  occupation     String?
+  burialPlace    String?
+  notes          String?
+  generation     Int     @default(1)
 
-  branchId     String?
-  branch       Branch?   @relation(fields: [branchId], references: [id])
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
 
-  fatherId     String?
-  father       Person?   @relation("Father", fields: [fatherId], references: [id])
+  fatherId         String?
+  father           Person?  @relation("Father", fields: [fatherId], references: [id])
   childrenAsFather Person[] @relation("Father")
 
-  motherId     String?
-  mother       Person?   @relation("Mother", fields: [motherId], references: [id])
+  motherId         String?
+  mother           Person?  @relation("Mother", fields: [motherId], references: [id])
   childrenAsMother Person[] @relation("Mother")
 
   marriagesAsHusband Marriage[] @relation("Husband")
   marriagesAsWife    Marriage[] @relation("Wife")
 
-  media        Media[]
+  media Media[]
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([fullName])
   @@index([nameNormalized])
@@ -65,13 +65,13 @@ model Person {
 }
 
 model Marriage {
-  id            String    @id @default(cuid())
-  husbandId     String
-  husband       Person    @relation("Husband", fields: [husbandId], references: [id])
-  wifeId        String
-  wife          Person    @relation("Wife", fields: [wifeId], references: [id])
-  marriageDate  DateTime?
-  createdAt     DateTime  @default(now())
+  id           String    @id @default(cuid())
+  husbandId    String
+  husband      Person    @relation("Husband", fields: [husbandId], references: [id])
+  wifeId       String
+  wife         Person    @relation("Wife", fields: [wifeId], references: [id])
+  marriageDate DateTime?
+  createdAt    DateTime  @default(now())
 
   @@unique([husbandId, wifeId])
   @@index([husbandId])
@@ -108,7 +108,7 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  auditLogs    AuditLog[]
+  auditLogs AuditLog[]
 }
 
 model AuditLog {

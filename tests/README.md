@@ -1,11 +1,11 @@
 # Test suite
 
-| Layer       | Runner    | Where                  | Notes                                          |
-| ----------- | --------- | ---------------------- | ---------------------------------------------- |
-| Unit        | Vitest    | `tests/unit/`          | Pure functions; no DB, no DOM where possible.  |
-| Component   | Vitest    | `tests/component/`     | React Testing Library against jsdom.           |
-| Integration | Vitest    | `tests/integration/`   | Express app via supertest + per-file SQLite.   |
-| E2E         | Playwright| `tests/e2e/`           | Real browser against the built preview server. |
+| Layer       | Runner    | Where                  | Notes                                                |
+| ----------- | --------- | ---------------------- | ---------------------------------------------------- |
+| Unit        | Vitest    | `tests/unit/`          | Pure functions; no DB, no DOM where possible.        |
+| Component   | Vitest    | `tests/component/`     | React Testing Library against jsdom.                 |
+| Integration | Vitest    | `tests/integration/`   | Express app via supertest + per-file isolated DB.    |
+| E2E         | Playwright| `tests/e2e/`           | Real browser against the built preview server.       |
 
 ## Running
 
@@ -19,11 +19,28 @@ pnpm test:all           # everything
 
 ## Database isolation
 
-Each test file runs in its own Vitest fork. `tests/helpers/setup.ts` writes a
-fresh `tmp/test-<hex>.db`, sets `DATABASE_URL` in `process.env` before any
-backend module is imported, and runs `prisma migrate deploy` against it. Within
-a file, `truncateAll()` (from `tests/helpers/app.ts`) resets every table
-between cases.
+Each test file runs in its own Vitest fork. `tests/helpers/setup.ts` provisions
+a fresh database per fork, sets `DATABASE_URL` in `process.env` before any
+backend module is imported, and runs `prisma migrate deploy` against it.
+Provider is chosen by `DB_PROVIDER`:
+
+- **`DB_PROVIDER=sqlite` (default).** Per-fork file at `tmp/test-<hex>.db`.
+- **`DB_PROVIDER=postgresql`.** Per-fork schema `test_<hex>` inside the database
+  pointed to by `DATABASE_URL` (or `TEST_DATABASE_URL`). The harness shells out
+  to `psql` to `CREATE SCHEMA`, then runs `prisma migrate deploy` against
+  `backend/prisma/postgres/schema.prisma`. `tests/helpers/globalSetup.ts` drops
+  every `test_*` schema after the suite so local reruns don't leak.
+
+Within a file, `truncateAll()` (from `tests/helpers/app.ts`) resets every table
+between cases. Run the suite under postgres with:
+
+```bash
+DB_PROVIDER=postgresql DATABASE_URL=postgresql://USER@localhost:5432/roots_test pnpm test
+```
+
+(`pg_isready`-equivalent: the first `psql` call surfaces a clear error if
+postgres isn't reachable, telling you to either start it or unset
+`DB_PROVIDER`.)
 
 ## Factories
 

@@ -1,7 +1,14 @@
 # Data model
 
-Source of truth: [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma).
-SQLite stores enum-style fields as `TEXT`.
+Source of truth: two parallel schema files kept byte-identical (enforced by
+`pnpm check:schemas`):
+
+- [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma) — SQLite (default)
+- [`backend/prisma/postgres/schema.prisma`](../backend/prisma/postgres/schema.prisma) — PostgreSQL
+
+The active provider is picked by the `DB_PROVIDER` env var (`sqlite` | `postgresql`).
+Both providers store enum-style fields as `TEXT`; the typed values live in
+[`shared/src/types.ts`](../shared/src/types.ts).
 
 ## Person
 
@@ -133,7 +140,17 @@ Each Prisma migration ships with a `down.sql` next to `migration.sql`. Prisma
 itself doesn't auto-run them; they document the inverse so an operator can
 restore a previous shape manually if needed.
 
-Current migration chain:
+**Dual migration tracks.** The two providers have independent migration histories:
+
+- SQLite: `backend/prisma/migrations/` (chain below)
+- PostgreSQL: `backend/prisma/postgres/migrations/` (single `_init` baseline today)
+
+Schema-level changes must land in both tracks. After editing either `.prisma`
+file, run `pnpm --filter backend migrate` under `DB_PROVIDER=sqlite` and again
+under `DB_PROVIDER=postgresql` against a matching dev DB so the two folders
+advance together.
+
+Current SQLite migration chain:
 
 1. `20260514035439_init` — initial schema.
 2. `20260514060855_vn_dates_names_add` — adds `nameNormalized`, `honorific`,

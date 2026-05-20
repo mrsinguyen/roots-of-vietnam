@@ -93,3 +93,25 @@ describe('DELETE /api/marriages/:id', () => {
     expect(await prisma.marriage.count()).toBe(0);
   });
 });
+
+describe('marriage audit', () => {
+  it('writes marriage.create and marriage.delete audit rows', async () => {
+    const editor = await loginAs(app, 'editor');
+    const prisma = await getPrisma();
+    const h = await createPerson({});
+    const w = await createPerson({ gender: 'Nu' });
+    const created = await request(app)
+      .post('/api/marriages')
+      .set('Cookie', editor.cookie)
+      .send({ husbandId: h.id, wifeId: w.id })
+      .expect(201);
+    await request(app)
+      .delete(`/api/marriages/${created.body.id}`)
+      .set('Cookie', editor.cookie)
+      .expect(200);
+    const actions = (
+      await prisma.auditLog.findMany({ where: { targetType: 'Marriage' }, orderBy: { createdAt: 'asc' } })
+    ).map((r) => r.action);
+    expect(actions).toEqual(['marriage.create', 'marriage.delete']);
+  });
+});

@@ -18,13 +18,18 @@ small and Vietnamese-first — keep that in mind when proposing changes.
 ```bash
 pnpm install
 cp .env.example .env
-pnpm --filter backend migrate
+pnpm --filter backend migrate          # SQLite by default; set DB_PROVIDER=postgresql for Postgres
 pnpm seed
 pnpm dev   # backend :3001, frontend :5173
 ```
 
-Sign in with `admin` / `changeme`. Reset the database any time with
-`rm database/roots.db && pnpm --filter backend migrate && pnpm seed`.
+Sign in with `admin` / `changeme`. Reset the database any time:
+
+- **SQLite:** `rm database/roots.db && pnpm --filter backend migrate && pnpm seed`
+- **PostgreSQL:** `dropdb roots_dev && createdb roots_dev && DB_PROVIDER=postgresql pnpm --filter backend migrate && pnpm seed`
+
+When you switch `DB_PROVIDER`, re-run `pnpm --filter backend prisma:generate` so the
+Prisma client engine matches the new provider.
 
 ## Project layout
 
@@ -41,7 +46,12 @@ the frontend bundle.
 - **Comments.** Default to none. Only add a comment when the *why* is non-obvious.
 - **Migrations.** Every Prisma migration ships with a `down.sql` describing the
   inverse. Data backfills go in `backend/prisma/backfill-*.ts` scripts that are
-  idempotent and re-runnable.
+  idempotent and re-runnable. **Schema changes must land in both provider tracks.**
+  After editing either `backend/prisma/schema.prisma` (sqlite) or
+  `backend/prisma/postgres/schema.prisma`, run `pnpm check:schemas` to confirm the
+  two stay byte-identical outside the `datasource db {}` block, then run
+  `pnpm --filter backend migrate` under **both** `DB_PROVIDER=sqlite` and
+  `DB_PROVIDER=postgresql` so the migration folders advance together.
 
 ## Commit messages
 

@@ -33,13 +33,26 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {
-            // Genealogy data changes rarely; show whatever we have, then refresh in
-            // the background. Stale-while-revalidate hides the network when offline.
-            urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+            // Genealogy data changes rarely; show whatever we have, then refresh
+            // in the background. Stale-while-revalidate hides the network when
+            // offline. The pattern is intentionally narrow: only the read-only
+            // family endpoints are cached. /api/auth/*, /api/users, and
+            // /api/audit carry session-scoped or admin-only data and must not
+            // persist in Cache Storage where a second user on a shared device
+            // could read them via DevTools after the first user logs out.
+            urlPattern: ({ url, request }) => {
+              if (request.method !== 'GET') return false;
+              if (!url.pathname.startsWith('/api/')) return false;
+              const blocked = ['/api/auth', '/api/users', '/api/audit', '/api/backup'];
+              return !blocked.some((p) => url.pathname.startsWith(p));
+            },
             handler: 'StaleWhileRevalidate',
             options: {
-              cacheName: 'api-cache-v2',
-              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheName: 'api-cache-v3',
+              // Short TTL — long enough to hide a flaky network, short enough
+              // that a user who logs out + walks away doesn't leave a week of
+              // PII in Cache Storage.
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },

@@ -298,29 +298,40 @@ export default function PersonProfilePage() {
         </div>
         {person.media && person.media.length > 0 ? (
           <ul className="grid grid-cols-2 gap-3 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-            {person.media.map((m) => (
+            {person.media.map((m) => {
+              // Defense in depth: a malicious backup could re-introduce a row
+              // whose filePath is `javascript:…`. Only let through paths the
+              // upload route would have produced — `<basename>.<ext>`, no
+              // bare dots.
+              const safe = /^\/uploads\/[A-Za-z0-9_-]+\.[A-Za-z0-9]+$/.test(m.filePath);
+              const href = safe ? `${API_BASE}${m.filePath}` : undefined;
+              return (
               <li
                 key={m.id}
                 className="group overflow-hidden rounded-lg border border-stone-200 bg-stone-50 transition-shadow hover:shadow-soft"
               >
-                {m.type === 'image' ? (
-                  <a href={`${API_BASE}${m.filePath}`} target="_blank" rel="noreferrer">
+                {m.type === 'image' && safe ? (
+                  <a href={href} target="_blank" rel="noreferrer">
                     <img
-                      src={`${API_BASE}${m.filePath}`}
+                      src={href}
                       alt={m.caption ?? ''}
                       loading="lazy"
                       className="aspect-square w-full object-cover transition-transform group-hover:scale-[1.02]"
                     />
                   </a>
-                ) : (
+                ) : safe ? (
                   <a
-                    href={`${API_BASE}${m.filePath}`}
+                    href={href}
                     target="_blank"
                     rel="noreferrer"
                     className="flex aspect-square items-center justify-center text-xs font-semibold text-stone-500"
                   >
                     {m.type.toUpperCase()}
                   </a>
+                ) : (
+                  <span className="flex aspect-square items-center justify-center text-xs font-semibold text-stone-400">
+                    {m.type.toUpperCase()}
+                  </span>
                 )}
                 <div className="flex items-center justify-between gap-1 px-2 py-1.5 text-xs">
                   <span className="truncate text-stone-600">{m.caption ?? ''}</span>
@@ -335,7 +346,8 @@ export default function PersonProfilePage() {
                   )}
                 </div>
               </li>
-            ))}
+            );
+            })}
           </ul>
         ) : (
           <p className="text-sm text-stone-400">{vi.common.empty}</p>

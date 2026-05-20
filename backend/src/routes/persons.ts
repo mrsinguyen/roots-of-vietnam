@@ -20,7 +20,7 @@ const nullableInt = (inner: z.ZodNumber) =>
   z.union([inner, z.null()]).optional().transform((v) => (v === undefined ? undefined : v));
 
 const personCreateSchema = z.object({
-  fullName: z.string().min(1, 'Họ tên không được để trống'),
+  fullName: z.string().min(1, 'Họ tên không được để trống').max(200),
   honorific: z.string().max(20).nullish(),
   gender: genderEnum,
   birthYear: nullableInt(yearInt),
@@ -31,13 +31,16 @@ const personCreateSchema = z.object({
   deathDay: nullableInt(dayInt),
   birthDateLunar: z.string().max(60).nullish(),
   deathDateLunar: z.string().max(60).nullish(),
-  biography: z.string().nullish(),
-  occupation: z.string().nullish(),
-  burialPlace: z.string().nullish(),
-  notes: z.string().nullish(),
-  branchId: z.string().nullish(),
-  fatherId: z.string().nullish(),
-  motherId: z.string().nullish(),
+  // Caps prevent a single authenticated editor from absorbing the full
+  // 2 MB body budget into a single row and blowing up tree/list payloads
+  // for every other reader.
+  biography: z.string().max(10_000).nullish(),
+  occupation: z.string().max(200).nullish(),
+  burialPlace: z.string().max(500).nullish(),
+  notes: z.string().max(5_000).nullish(),
+  branchId: z.string().max(50).nullish(),
+  fatherId: z.string().max(50).nullish(),
+  motherId: z.string().max(50).nullish(),
 });
 
 const personUpdateSchema = personCreateSchema.partial();

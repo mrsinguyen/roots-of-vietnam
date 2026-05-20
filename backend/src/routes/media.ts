@@ -14,29 +14,45 @@ const router = Router();
 const uploadDir = path.resolve(process.cwd(), env.UPLOAD_DIR);
 fs.mkdirSync(uploadDir, { recursive: true });
 
+// Whitelist of MIME types we accept. Multer's `file.mimetype` is the
+// client-declared header — never trust it for routing/execution decisions.
+// We use it only to pick the stored filename extension and Media.type label.
+// The actual XSS defense is the static-serving headers (X-Content-Type-Options:
+// nosniff + Content-Disposition: attachment) set on `/uploads` in server.ts,
+// which prevent any uploaded blob from executing in the app origin even if a
+// malicious client lies about its content type.
+const ACCEPTED_MIME: Record<string, { type: MediaType; ext: string }> = {
+  'image/jpeg': { type: 'image', ext: '.jpg' },
+  'image/png': { type: 'image', ext: '.png' },
+  'image/webp': { type: 'image', ext: '.webp' },
+  'image/gif': { type: 'image', ext: '.gif' },
+  'application/pdf': { type: 'pdf', ext: '.pdf' },
+  'audio/mpeg': { type: 'audio', ext: '.mp3' },
+  'audio/wav': { type: 'audio', ext: '.wav' },
+  'audio/ogg': { type: 'audio', ext: '.ogg' },
+  'audio/mp4': { type: 'audio', ext: '.m4a' },
+  'application/msword': { type: 'doc', ext: '.doc' },
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
+    type: 'doc',
+    ext: '.docx',
+  },
+};
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
+    // Server-controlled extension from the MIME allowlist — never trust
+    // file.originalname, which can carry .svg/.html/.exe regardless of the
+    // declared mimetype.
+    const meta = ACCEPTED_MIME[file.mimetype];
+    if (!meta) {
+      cb(new Error(`Định dạng không hỗ trợ: ${file.mimetype}`), '');
+      return;
+    }
     const hash = crypto.randomBytes(8).toString('hex');
-    cb(null, `${Date.now()}-${hash}${ext}`);
+    cb(null, `${Date.now()}-${hash}${meta.ext}`);
   },
 });
-
-const ACCEPTED_MIME: Record<string, MediaType> = {
-  'image/jpeg': 'image',
-  'image/png': 'image',
-  'image/webp': 'image',
-  'image/gif': 'image',
-  'application/pdf': 'pdf',
-  'audio/mpeg': 'audio',
-  'audio/wav': 'audio',
-  'audio/ogg': 'audio',
-  'audio/mp4': 'audio',
-  'application/msword': 'doc',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'doc',
-  'text/plain': 'doc',
-};
 
 const upload = multer({
   storage,
@@ -74,7 +90,7 @@ router.post(
       res.status(404).json({ error: 'Không tìm thấy nhân vật' });
       return;
     }
-    const type = ACCEPTED_MIME[file.mimetype] ?? 'doc';
+    const type = ACCEPTED_MIME[file.mimetype]?.type ?? 'doc';
     const media = await prisma.media.create({
       data: {
         personId,
