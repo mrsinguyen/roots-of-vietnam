@@ -174,179 +174,209 @@ export default function PersonEditPage() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">
+      <div className="sticky top-[64px] z-20 -mx-4 flex flex-col gap-2 border-b border-stone-200 bg-stone-50/90 px-4 py-3 backdrop-blur-md sm:static sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0">
+        <h2 className="font-serif text-xl font-semibold tracking-tight text-stone-900 sm:text-3xl">
           {editing ? vi.person.editPerson : vi.person.addPerson}
         </h2>
         <div className="flex gap-2">
-          <button type="button" className="btn-secondary" onClick={() => navigate(-1)}>
+          <button type="button" className="btn-secondary flex-1 sm:flex-none" onClick={() => navigate(-1)}>
             {vi.common.cancel}
           </button>
-          <button type="submit" className="btn-primary" disabled={saving}>
+          <button type="submit" className="btn-primary flex-1 sm:flex-none" disabled={saving}>
             {saving ? vi.common.loading : vi.common.save}
           </button>
         </div>
       </div>
 
       {genConflict && (
-        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
           Đời hiện tại của nhân vật là {editedGen}, nhưng theo cha/mẹ phải là{' '}
           {expectedGen}. Lưu vẫn được nhưng nên kiểm tra lại quan hệ.
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Field label={vi.person.fullName}>
-          <input
-            className="input"
-            required
-            value={form.fullName}
-            onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-          />
-        </Field>
-        <Field label={vi.person.honorific}>
-          <input
-            className="input"
-            placeholder="Cụ, Ông, Bà, Cố…"
-            value={form.honorific}
-            onChange={(e) => setForm({ ...form, honorific: e.target.value })}
-          />
-        </Field>
-        <Field label={vi.person.gender}>
-          <select
-            className="input"
-            value={form.gender}
-            onChange={(e) => setForm({ ...form, gender: e.target.value as Gender })}
-          >
-            {(Object.keys(GENDER_LABEL) as Gender[]).map((g) => (
-              <option key={g} value={g}>
-                {GENDER_LABEL[g]}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label={vi.person.occupation}>
-          <input
-            className="input"
-            value={form.occupation}
-            onChange={(e) => setForm({ ...form, occupation: e.target.value })}
-          />
-        </Field>
-        <Field label={vi.person.birthDate} full>
-          <div className="grid grid-cols-3 gap-2">
+      <section className="card p-4 sm:p-5">
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-500">
+          Thông tin chính
+        </h3>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label={vi.person.fullName}>
             <input
               className="input"
-              placeholder="Năm"
-              inputMode="numeric"
-              value={form.birthYear}
-              onChange={(e) => setForm({ ...form, birthYear: e.target.value.replace(/\D/g, '') })}
+              required
+              value={form.fullName}
+              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
             />
+          </Field>
+          <Field label={vi.person.honorific}>
             <input
               className="input"
-              placeholder="Tháng"
-              inputMode="numeric"
-              value={form.birthMonth}
-              onChange={(e) => setForm({ ...form, birthMonth: e.target.value.replace(/\D/g, '') })}
+              placeholder="Cụ, Ông, Bà, Cố…"
+              value={form.honorific}
+              onChange={(e) => setForm({ ...form, honorific: e.target.value })}
             />
+          </Field>
+          <Field label={vi.person.gender}>
+            <select
+              className="input"
+              value={form.gender}
+              onChange={(e) => setForm({ ...form, gender: e.target.value as Gender })}
+            >
+              {(Object.keys(GENDER_LABEL) as Gender[]).map((g) => (
+                <option key={g} value={g}>
+                  {GENDER_LABEL[g]}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={vi.person.occupation}>
             <input
               className="input"
-              placeholder="Ngày"
-              inputMode="numeric"
-              value={form.birthDay}
-              onChange={(e) => setForm({ ...form, birthDay: e.target.value.replace(/\D/g, '') })}
+              value={form.occupation}
+              onChange={(e) => setForm({ ...form, occupation: e.target.value })}
             />
-          </div>
-        </Field>
-        <Field label={vi.person.birthDateLunar}>
-          <input
-            className="input"
-            placeholder="VD: Ất Dậu, mồng 5 tháng 3"
-            value={form.birthDateLunar}
-            onChange={(e) => setForm({ ...form, birthDateLunar: e.target.value })}
-          />
-        </Field>
-        <Field label={vi.person.deathDate} full>
-          <div className="grid grid-cols-3 gap-2">
+          </Field>
+        </div>
+      </section>
+
+      <section className="card p-4 sm:p-5">
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-500">
+          Ngày tháng
+        </h3>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label={vi.person.birthDate} full>
+            <div className="grid grid-cols-3 gap-2">
+              <input
+                className="input"
+                placeholder="Năm"
+                inputMode="numeric"
+                value={form.birthYear}
+                onChange={(e) => setForm({ ...form, birthYear: e.target.value.replace(/\D/g, '') })}
+              />
+              <input
+                className="input"
+                placeholder="Tháng"
+                inputMode="numeric"
+                value={form.birthMonth}
+                onChange={(e) => setForm({ ...form, birthMonth: e.target.value.replace(/\D/g, '') })}
+              />
+              <input
+                className="input"
+                placeholder="Ngày"
+                inputMode="numeric"
+                value={form.birthDay}
+                onChange={(e) => setForm({ ...form, birthDay: e.target.value.replace(/\D/g, '') })}
+              />
+            </div>
+          </Field>
+          <Field label={vi.person.birthDateLunar} full>
             <input
               className="input"
-              placeholder="Năm"
-              inputMode="numeric"
-              value={form.deathYear}
-              onChange={(e) => setForm({ ...form, deathYear: e.target.value.replace(/\D/g, '') })}
+              placeholder="VD: Ất Dậu, mồng 5 tháng 3"
+              value={form.birthDateLunar}
+              onChange={(e) => setForm({ ...form, birthDateLunar: e.target.value })}
             />
+          </Field>
+          <Field label={vi.person.deathDate} full>
+            <div className="grid grid-cols-3 gap-2">
+              <input
+                className="input"
+                placeholder="Năm"
+                inputMode="numeric"
+                value={form.deathYear}
+                onChange={(e) => setForm({ ...form, deathYear: e.target.value.replace(/\D/g, '') })}
+              />
+              <input
+                className="input"
+                placeholder="Tháng"
+                inputMode="numeric"
+                value={form.deathMonth}
+                onChange={(e) => setForm({ ...form, deathMonth: e.target.value.replace(/\D/g, '') })}
+              />
+              <input
+                className="input"
+                placeholder="Ngày"
+                inputMode="numeric"
+                value={form.deathDay}
+                onChange={(e) => setForm({ ...form, deathDay: e.target.value.replace(/\D/g, '') })}
+              />
+            </div>
+          </Field>
+          <Field label={vi.person.deathDateLunar} full>
             <input
               className="input"
-              placeholder="Tháng"
-              inputMode="numeric"
-              value={form.deathMonth}
-              onChange={(e) => setForm({ ...form, deathMonth: e.target.value.replace(/\D/g, '') })}
+              value={form.deathDateLunar}
+              onChange={(e) => setForm({ ...form, deathDateLunar: e.target.value })}
             />
+          </Field>
+        </div>
+      </section>
+
+      <section className="card p-4 sm:p-5">
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-500">
+          Quan hệ
+        </h3>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label={vi.person.branch}>
+            <select
+              className="input"
+              value={form.branchId}
+              onChange={(e) => setForm({ ...form, branchId: e.target.value })}
+            >
+              <option value="">{vi.common.selectPlaceholder}</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={vi.person.father}>
+            <PersonSelect
+              value={form.fatherId}
+              options={fathers}
+              onChange={(v) => setForm({ ...form, fatherId: v })}
+            />
+          </Field>
+          <Field label={vi.person.mother}>
+            <PersonSelect
+              value={form.motherId}
+              options={mothers}
+              onChange={(v) => setForm({ ...form, motherId: v })}
+            />
+          </Field>
+        </div>
+      </section>
+
+      <section className="card p-4 sm:p-5">
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-500">
+          Mô tả
+        </h3>
+        <div className="grid grid-cols-1 gap-4">
+          <Field label={vi.person.burialPlace} full>
             <input
               className="input"
-              placeholder="Ngày"
-              inputMode="numeric"
-              value={form.deathDay}
-              onChange={(e) => setForm({ ...form, deathDay: e.target.value.replace(/\D/g, '') })}
+              value={form.burialPlace}
+              onChange={(e) => setForm({ ...form, burialPlace: e.target.value })}
             />
-          </div>
-        </Field>
-        <Field label={vi.person.deathDateLunar}>
-          <input
-            className="input"
-            value={form.deathDateLunar}
-            onChange={(e) => setForm({ ...form, deathDateLunar: e.target.value })}
-          />
-        </Field>
-        <Field label={vi.person.branch}>
-          <select
-            className="input"
-            value={form.branchId}
-            onChange={(e) => setForm({ ...form, branchId: e.target.value })}
-          >
-            <option value="">{vi.common.selectPlaceholder}</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label={vi.person.father}>
-          <PersonSelect
-            value={form.fatherId}
-            options={fathers}
-            onChange={(v) => setForm({ ...form, fatherId: v })}
-          />
-        </Field>
-        <Field label={vi.person.mother}>
-          <PersonSelect
-            value={form.motherId}
-            options={mothers}
-            onChange={(v) => setForm({ ...form, motherId: v })}
-          />
-        </Field>
-        <Field label={vi.person.burialPlace} full>
-          <input
-            className="input"
-            value={form.burialPlace}
-            onChange={(e) => setForm({ ...form, burialPlace: e.target.value })}
-          />
-        </Field>
-        <Field label={vi.person.biography} full>
-          <textarea
-            className="input min-h-24"
-            value={form.biography}
-            onChange={(e) => setForm({ ...form, biography: e.target.value })}
-          />
-        </Field>
-        <Field label={vi.person.notes} full>
-          <textarea
-            className="input min-h-16"
-            value={form.notes}
-            onChange={(e) => setForm({ ...form, notes: e.target.value })}
-          />
-        </Field>
-      </div>
+          </Field>
+          <Field label={vi.person.biography} full>
+            <textarea
+              className="input min-h-28"
+              value={form.biography}
+              onChange={(e) => setForm({ ...form, biography: e.target.value })}
+            />
+          </Field>
+          <Field label={vi.person.notes} full>
+            <textarea
+              className="input min-h-20"
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            />
+          </Field>
+        </div>
+      </section>
+
     </form>
   );
 }
@@ -361,7 +391,7 @@ function Field({
   full?: boolean;
 }) {
   return (
-    <div className={full ? 'md:col-span-2' : ''}>
+    <div className={full ? 'sm:col-span-2' : ''}>
       <div className="label">{label}</div>
       {children}
     </div>

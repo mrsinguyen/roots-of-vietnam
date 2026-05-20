@@ -57,7 +57,6 @@ export default function PersonProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // Lineage breadcrumb: walk fatherId (fallback motherId) up to a root.
   useEffect(() => {
     let cancelled = false;
     async function walk(): Promise<void> {
@@ -136,65 +135,75 @@ export default function PersonProfilePage() {
   }
 
   return (
-    <div className="space-y-4">
-      <nav className="text-sm text-stone-500">
-        <ol className="flex flex-wrap items-center gap-2">
+    <div className="space-y-5">
+      <nav className="text-sm text-stone-500" aria-label="Đường dẫn">
+        <ol className="flex flex-wrap items-center gap-1.5">
           <li>
-            <Link to="/persons" className="hover:underline">
+            <Link to="/persons" className="hover:text-stone-700 hover:underline">
               {vi.nav.persons}
             </Link>
           </li>
           {lineage.map((p) => (
-            <li key={p.id} className="flex items-center gap-2">
-              <span>›</span>
-              <Link to={`/persons/${p.id}`} className="hover:underline">
+            <li key={p.id} className="flex items-center gap-1.5">
+              <span aria-hidden="true">›</span>
+              <Link to={`/persons/${p.id}`} className="hover:text-stone-700 hover:underline">
                 {p.fullName}
               </Link>
             </li>
           ))}
-          <li className="flex items-center gap-2">
-            <span>›</span>
+          <li className="flex items-center gap-1.5">
+            <span aria-hidden="true">›</span>
             <span className="text-stone-700">{person.fullName}</span>
           </li>
         </ol>
       </nav>
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-semibold">
-            {person.honorific ? `${person.honorific} ` : ''}
-            {person.fullName}
-          </h2>
-          <div className="text-sm text-stone-500">
-            {GENDER_LABEL[person.gender]} · {generationLabel(person.generation)}
-            {person.branch ? ` · ${person.branch.name}` : ''} · {lifespanLabel(
-              { year: person.birthYear, month: person.birthMonth, day: person.birthDay },
-              { year: person.deathYear, month: person.deathMonth, day: person.deathDay },
-              person.birthDateLunar,
-            )}
-            {!online && (
-              <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-amber-800">
-                {vi.common.offline}
+      <div className="card relative overflow-hidden p-4 sm:p-6">
+        <div
+          aria-hidden="true"
+          className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-bark-600 via-bark-500 to-bark-700"
+        />
+        <div className="flex flex-col gap-4 pl-3 sm:flex-row sm:items-start sm:justify-between sm:pl-4">
+          <div className="min-w-0">
+            <h2 className="font-serif text-3xl font-semibold leading-tight tracking-tight text-stone-900 sm:text-4xl">
+              {person.honorific ? `${person.honorific} ` : ''}
+              {person.fullName}
+            </h2>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-stone-600">
+              <span className="seal">{generationLabel(person.generation)}</span>
+              <span className="chip">{GENDER_LABEL[person.gender]}</span>
+              {person.branch && <span className="chip">{person.branch.name}</span>}
+              <span className="font-serif italic text-stone-500">
+                {lifespanLabel(
+                  { year: person.birthYear, month: person.birthMonth, day: person.birthDay },
+                  { year: person.deathYear, month: person.deathMonth, day: person.deathDay },
+                  person.birthDateLunar,
+                )}
               </span>
+              {!online && (
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
+                  {vi.common.offline}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {canEdit && (
+              <Link className="btn-secondary" to={`/persons/${person.id}/edit`}>
+                {vi.common.edit}
+              </Link>
+            )}
+            {canDelete && (
+              <button type="button" className="btn-danger" onClick={onDeletePerson}>
+                {vi.common.delete}
+              </button>
             )}
           </div>
         </div>
-        <div className="flex gap-2">
-          {canEdit && (
-            <Link className="btn-secondary" to={`/persons/${person.id}/edit`}>
-              {vi.common.edit}
-            </Link>
-          )}
-          {canDelete && (
-            <button className="btn-danger" onClick={onDeletePerson}>
-              {vi.common.delete}
-            </button>
-          )}
-        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="card space-y-2 p-4 md:col-span-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="card space-y-2 p-4 sm:p-5 lg:col-span-2">
           <DetailRow
             label={vi.person.birthDate}
             value={partialDateLabel({
@@ -229,8 +238,10 @@ export default function PersonProfilePage() {
           {person.notes && <DetailRow label={vi.person.notes} value={person.notes} />}
         </div>
 
-        <aside className="card space-y-3 p-4">
-          <h3 className="font-semibold">{vi.person.lineage}</h3>
+        <aside className="card space-y-4 p-4 sm:p-5">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
+            {vi.person.lineage}
+          </h3>
           <RelationList
             label={vi.person.father}
             people={person.father ? [{ id: person.father.id, fullName: person.father.fullName }] : []}
@@ -266,9 +277,11 @@ export default function PersonProfilePage() {
         </aside>
       </div>
 
-      <div className="card p-4">
+      <div className="card p-4 sm:p-5">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-semibold">{vi.person.photos}</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
+            {vi.person.photos}
+          </h3>
           {canEdit && (
             <label className="btn-secondary cursor-pointer">
               <input
@@ -284,15 +297,19 @@ export default function PersonProfilePage() {
           )}
         </div>
         {person.media && person.media.length > 0 ? (
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          <ul className="grid grid-cols-2 gap-3 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
             {person.media.map((m) => (
-              <li key={m.id} className="overflow-hidden rounded-md border border-stone-200 bg-stone-50">
+              <li
+                key={m.id}
+                className="group overflow-hidden rounded-lg border border-stone-200 bg-stone-50 transition-shadow hover:shadow-soft"
+              >
                 {m.type === 'image' ? (
                   <a href={`${API_BASE}${m.filePath}`} target="_blank" rel="noreferrer">
                     <img
                       src={`${API_BASE}${m.filePath}`}
                       alt={m.caption ?? ''}
-                      className="aspect-square w-full object-cover"
+                      loading="lazy"
+                      className="aspect-square w-full object-cover transition-transform group-hover:scale-[1.02]"
                     />
                   </a>
                 ) : (
@@ -300,12 +317,12 @@ export default function PersonProfilePage() {
                     href={`${API_BASE}${m.filePath}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex aspect-square items-center justify-center text-xs text-stone-500"
+                    className="flex aspect-square items-center justify-center text-xs font-semibold text-stone-500"
                   >
                     {m.type.toUpperCase()}
                   </a>
                 )}
-                <div className="flex items-center justify-between gap-1 px-2 py-1 text-xs">
+                <div className="flex items-center justify-between gap-1 px-2 py-1.5 text-xs">
                   <span className="truncate text-stone-600">{m.caption ?? ''}</span>
                   {canEdit && (
                     <button
@@ -330,9 +347,11 @@ export default function PersonProfilePage() {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-3 gap-2 text-sm">
-      <div className="text-stone-500">{label}</div>
-      <div className="col-span-2 whitespace-pre-line text-stone-800">{value}</div>
+    <div className="grid grid-cols-1 gap-1 border-b border-stone-100 py-2 last:border-b-0 sm:grid-cols-3 sm:gap-2">
+      <div className="text-xs font-semibold uppercase tracking-wide text-stone-500 sm:text-sm sm:font-normal sm:normal-case sm:tracking-normal">
+        {label}
+      </div>
+      <div className="whitespace-pre-line text-sm text-stone-800 sm:col-span-2">{value}</div>
     </div>
   );
 }
@@ -348,20 +367,22 @@ function RelationList({
 }) {
   return (
     <div className="text-sm">
-      <div className="text-stone-500">{label}</div>
+      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-500">
+        {label}
+      </div>
       {people.length === 0 ? (
         unknownPlaceholder ? (
-          <span className="inline-flex items-center rounded border border-dashed border-stone-400 bg-stone-100 px-2 py-0.5 text-xs text-stone-500">
+          <span className="inline-flex items-center rounded-full border border-dashed border-stone-400 bg-stone-100 px-2.5 py-0.5 text-xs text-stone-500">
             Chưa rõ
           </span>
         ) : (
           <div className="text-stone-400">—</div>
         )
       ) : (
-        <ul>
+        <ul className="space-y-0.5">
           {people.map((p) => (
             <li key={p.id}>
-              <Link to={`/persons/${p.id}`} className="text-bark-600 hover:underline">
+              <Link to={`/persons/${p.id}`} className="text-bark-700 hover:underline">
                 {p.fullName}
               </Link>
             </li>

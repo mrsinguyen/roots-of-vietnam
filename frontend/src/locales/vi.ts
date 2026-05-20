@@ -10,6 +10,9 @@ export const vi = {
     admin: 'Quản trị',
     logout: 'Đăng xuất',
     install: 'Cài đặt ứng dụng',
+    menu: 'Mở thực đơn',
+    primary: 'Điều hướng chính',
+    quickNav: 'Điều hướng nhanh',
   },
 
   auth: {

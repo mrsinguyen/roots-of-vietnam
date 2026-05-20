@@ -31,17 +31,25 @@ export default function ProfileDrawer({
   if (!personId) return null;
 
   return (
-    <div className="fixed inset-0 z-40 flex">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-stretch sm:justify-end">
       <div
-        className="flex-1 bg-stone-900/30"
+        className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm"
         onClick={onClose}
         role="button"
         aria-label={vi.common.close}
       />
-      <aside className="w-full max-w-md overflow-y-auto border-l border-stone-200 bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
-          <h3 className="font-semibold">{person?.fullName ?? vi.common.loading}</h3>
-          <button className="btn-secondary px-2 py-1" onClick={onClose}>
+      <aside
+        className="relative w-full max-w-md max-h-[88vh] overflow-y-auto rounded-t-2xl border border-stone-200 bg-white shadow-lift sm:max-h-none sm:rounded-none sm:rounded-l-2xl sm:border-l"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-stone-200 bg-white/95 px-4 py-3 backdrop-blur-md">
+          <div className="flex items-center gap-2">
+            <span aria-hidden="true" className="hidden h-1 w-10 rounded-full bg-stone-300 sm:inline-block" />
+            <h3 className="truncate text-base font-semibold text-stone-900">
+              {person?.fullName ?? vi.common.loading}
+            </h3>
+          </div>
+          <button type="button" className="btn-secondary px-2.5 py-1.5 text-xs" onClick={onClose}>
             {vi.common.close}
           </button>
         </div>
@@ -126,11 +134,11 @@ export default function ProfileDrawer({
                   }
                 />
               ) : null}
-              <div className="flex gap-2 pt-3">
-                <Link to={`/persons/${person.id}`} className="btn-primary">
+              <div className="flex flex-wrap gap-2 pt-3">
+                <Link to={`/persons/${person.id}`} className="btn-primary flex-1 justify-center sm:flex-none">
                   {vi.common.open}
                 </Link>
-                <Link to={`/tree?root=${person.id}`} className="btn-secondary">
+                <Link to={`/tree?root=${person.id}`} className="btn-secondary flex-1 justify-center sm:flex-none">
                   Xem từ người này
                 </Link>
               </div>
@@ -144,16 +152,16 @@ export default function ProfileDrawer({
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-3 gap-2">
-      <div className="text-stone-500">{label}</div>
-      <div className="col-span-2">{value}</div>
+    <div className="grid grid-cols-3 gap-2 border-b border-stone-100 py-1.5 last:border-b-0">
+      <div className="text-xs font-semibold uppercase tracking-wide text-stone-500">{label}</div>
+      <div className="col-span-2 text-stone-800">{value}</div>
     </div>
   );
 }
 
 function PersonLink({ id, name }: { id: string; name: string }) {
   return (
-    <Link to={`/persons/${id}`} className="text-bark-600 hover:underline">
+    <Link to={`/persons/${id}`} className="text-bark-700 hover:underline">
       {name}
     </Link>
   );
@@ -161,7 +169,7 @@ function PersonLink({ id, name }: { id: string; name: string }) {
 
 function UnknownParent() {
   return (
-    <span className="inline-flex items-center rounded border border-dashed border-stone-400 bg-stone-100 px-2 py-0.5 text-xs text-stone-500">
+    <span className="inline-flex items-center rounded-full border border-dashed border-stone-400 bg-stone-100 px-2 py-0.5 text-xs text-stone-500">
       Chưa rõ
     </span>
   );

@@ -27,7 +27,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,woff2}'],
         navigateFallback: '/index.html',
         // Cap precache so a long-lived install doesn't grow unbounded.
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,

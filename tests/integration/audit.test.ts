@@ -3,6 +3,7 @@ import request from 'supertest';
 import { buildApp, getPrisma, truncateAll } from '../helpers/app';
 import { loginAs } from '../helpers/auth';
 import { createPerson } from '../factories';
+import { writeAudit } from '../../backend/src/lib/audit';
 
 let app: Awaited<ReturnType<typeof buildApp>>;
 beforeAll(async () => {
@@ -46,5 +47,15 @@ describe('/api/audit', () => {
     const actions = res.body.items.map((i: { action: string }) => i.action);
     expect(actions).toContain('foo');
     expect(actions).not.toContain('bar');
+  });
+
+  it('writeAudit nulls out a stale userId instead of throwing on FK', async () => {
+    // Simulates the JWT-cookie-after-DB-reset case: the userId carried by the
+    // session no longer exists in the User table.
+    const prisma = await getPrisma();
+    await writeAudit({ userId: 'ghost-user-id', action: 'auth.logout' });
+    const row = await prisma.auditLog.findFirst({ where: { action: 'auth.logout' } });
+    expect(row).not.toBeNull();
+    expect(row?.userId).toBeNull();
   });
 });

@@ -97,6 +97,16 @@ describe('<PersonProfilePage />', () => {
     expect(screen.getByText(/Đời thứ 4/)).toBeInTheDocument();
   });
 
+  it('wraps the generation ordinal in a heritage seal element', async () => {
+    apiMocks.getPerson.mockResolvedValue(personFixture());
+    render(wrap());
+    const ordinal = await screen.findByText(/Đời thứ 4/);
+    // The stylized "dấu triện" frame is signalled by the `.seal` class on the
+    // ordinal element — guards the editorial design from regressing back to a
+    // plain chip.
+    expect(ordinal.classList.contains('seal')).toBe(true);
+  });
+
   it('renders biography, burial place, and notes when present', async () => {
     apiMocks.getPerson.mockResolvedValue(personFixture());
     render(wrap());
