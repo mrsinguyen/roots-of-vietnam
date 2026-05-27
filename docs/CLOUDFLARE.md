@@ -118,9 +118,11 @@ proxies `/api` + `/uploads` to `pnpm dev` on :8788.
 > constant-time dummy hash lazily and registers a Web Crypto `setRandomFallback`.
 > Don't reintroduce a top-level `bcrypt.hashSync` — it crashes worker startup.
 >
-> The `_redirects` SPA rule (`/* /index.html 200`) triggers a benign wrangler
-> "infinite loop" warning; Pages serves real assets first, so deep links
-> (`/tree`, `/persons/:id`) still fall back to `index.html`.
+> **SPA fallback is automatic.** With no top-level `404.html`, Cloudflare Pages
+> treats the project as a single-page app and serves `index.html` for any path
+> that isn't a static asset or a Function route — so deep links (`/tree`,
+> `/persons/:id`) just work. No `_redirects` rule is needed (adding `/* /index.html
+> 200` is redundant and trips wrangler's "infinite loop" warning, so we don't).
 
 ### Scheduled backups (optional)
 

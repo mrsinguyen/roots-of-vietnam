@@ -94,7 +94,14 @@ auth.get('/me', requireAuth, async (c) => {
     where: { id },
     select: { id: true, username: true, role: true },
   });
-  if (!user) return c.json({ error: 'Không tìm thấy người dùng' }, 404);
+  // Valid token but the user is gone (e.g. the DB was reseeded and the browser
+  // still holds an old cookie). The session is invalid → clear the cookie and
+  // return 401 so the client re-authenticates, rather than 404 which the client
+  // would treat as a transient error and keep a stale cached user.
+  if (!user) {
+    clearAuthCookie(c);
+    return c.json({ error: 'Phiên đăng nhập không hợp lệ' }, 401);
+  }
 
   // Sliding refresh: re-issue a fresh cookie on every authenticated /me hit so an
   // active session keeps rolling forward. We do NOT revoke the previous jti here
