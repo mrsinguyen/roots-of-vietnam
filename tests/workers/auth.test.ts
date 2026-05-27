@@ -91,6 +91,16 @@ describe('GET /api/auth/me', () => {
     expect(c2).toBeTruthy();
     expect(c2).not.toBe(c1);
   });
+
+  it('returns 401 (not 404) when the token user no longer exists (reseed)', async () => {
+    await seedUser('ghost', 'longenoughpw1');
+    const login = await h.api('POST', '/api/auth/login', { body: { username: 'ghost', password: 'longenoughpw1' } });
+    const cookie = cookieFrom(login)!;
+    // Simulate a reseed: the user the still-valid token points to is gone.
+    await h.prisma.user.deleteMany({ where: { username: 'ghost' } });
+    const me = await h.api('GET', '/api/auth/me', { cookie });
+    expect(me.status).toBe(401);
+  });
 });
 
 describe('POST /api/auth/logout', () => {
