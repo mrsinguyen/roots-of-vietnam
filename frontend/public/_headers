@@ -1,0 +1,10 @@
+# Security headers for the static site on Cloudflare Pages. Mirrors the helmet
+# CSP from the Express backend (server.ts) and adds PWA-safe directives
+# (worker-src, manifest-src) so the service worker + manifest still load.
+# NOTE: connect-src is 'self' for a same-origin Pages deploy. If the API lives
+# on a different origin (CORS_ORIGIN set), add that origin to connect-src.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'

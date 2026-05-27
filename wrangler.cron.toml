@@ -1,0 +1,21 @@
+# Standalone Cron Worker for scheduled backups (Pages Functions can't do cron).
+# Deploy separately: wrangler deploy -c wrangler.cron.toml
+# Bind it to the SAME D1 database id + R2 bucket as wrangler.toml.
+name = "roots-of-vietnam-backup-cron"
+main = "worker/scheduled.ts"
+compatibility_date = "2026-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Weekly: writes a backup only if the newest one is older than 7 days
+# (autoBackupIfStale). Adjust as needed.
+[triggers]
+crons = ["0 3 * * 1"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "roots-of-vietnam"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "roots-of-vietnam-media"

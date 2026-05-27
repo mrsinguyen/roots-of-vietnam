@@ -86,6 +86,8 @@ test.describe('backup admin journey', () => {
     await login(page);
     await page.goto(`http://localhost:${handles.frontendPort}/admin`);
     await page.getByRole('button', { name: 'Sao lưu ngay' }).click();
-    await expect(page.getByText(/backup-/)).toBeVisible({ timeout: 10_000 });
+    // Anchor on the filename in the backup list. A loose /backup-/ also matches
+    // the success toast ("Đã tạo sao lưu: backup-…json") and trips strict mode.
+    await expect(page.getByText(/^backup-.*\.json$/)).toBeVisible({ timeout: 10_000 });
   });
 });

@@ -1,0 +1,37 @@
+# Cloudflare Pages config for the Roots of Vietnam deployment.
+# Frontend (static, from frontend/dist) + API (Pages Functions in functions/,
+# delegating to the Hono app in worker/) + D1 + KV + R2.
+#
+# First-time setup creates the real binding IDs (see docs/CLOUDFLARE.md):
+#   wrangler d1 create roots-of-vietnam
+#   wrangler kv namespace create roots-kv
+#   wrangler r2 bucket create roots-of-vietnam-media
+# then paste the returned ids below and:
+#   wrangler pages secret put JWT_SECRET
+name = "roots-of-vietnam"
+compatibility_date = "2026-05-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "frontend/dist"
+
+# D1 (SQLite). migrations_dir holds the SQL emitted by `pnpm prisma:migrate:diff`.
+[[d1_databases]]
+binding = "DB"
+database_name = "roots-of-vietnam"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "prisma/migrations"
+
+# KV: login rate-limit buckets (ratelimit:*) + revoked-jwt denylist (denylist:*).
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# R2: uploaded media (media/*) + JSON/zip backups (backups/*).
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "roots-of-vietnam-media"
+
+[vars]
+JWT_EXPIRES_IN = "7d"
+NODE_ENV = "production"
+# CORS_ORIGIN and COOKIE_DOMAIN are optional; set only for split-origin deploys.
+# JWT_SECRET is a secret — never put it here. Use `wrangler pages secret put`.

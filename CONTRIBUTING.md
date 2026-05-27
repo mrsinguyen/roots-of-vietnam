@@ -15,21 +15,26 @@ small and Vietnamese-first — keep that in mind when proposing changes.
 
 ## Local setup
 
+The app runs on the Cloudflare stack locally via `wrangler pages dev` (real D1 /
+KV / R2 emulation). First provision the bindings — see
+[`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md) — then:
+
 ```bash
 pnpm install
-cp .env.example .env
-pnpm --filter backend migrate          # SQLite by default; set DB_PROVIDER=postgresql for Postgres
-pnpm seed
-pnpm dev   # backend :3001, frontend :5173
+echo 'JWT_SECRET=local-dev-secret-min-16-chars' > .dev.vars   # gitignored, dev only
+pnpm cf:build        # generate the D1 Prisma client + build the UI
+pnpm migrate:local   # apply the schema to the local D1
+pnpm seed:local      # admin/changeme + demo family
+pnpm dev             # wrangler pages dev → http://localhost:8788
 ```
 
-Sign in with `admin` / `changeme`. Reset the database any time:
+Sign in with `admin` / `changeme`. Reset the local database any time:
 
-- **SQLite:** `rm database/roots.db && pnpm --filter backend migrate && pnpm seed`
-- **PostgreSQL:** `dropdb roots_dev && createdb roots_dev && DB_PROVIDER=postgresql pnpm --filter backend migrate && pnpm seed`
+```bash
+rm -rf .wrangler/state && pnpm migrate:local && pnpm seed:local
+```
 
-When you switch `DB_PROVIDER`, re-run `pnpm --filter backend prisma:generate` so the
-Prisma client engine matches the new provider.
+For frontend HMR, run `pnpm dev:web` (Vite :5173, proxies `/api` → :8788) alongside `pnpm dev`.
 
 ## Project layout
 
@@ -44,14 +49,10 @@ the frontend bundle.
 - **Errors.** Fail fast at API boundaries; return `{ error: "Vietnamese copy" }`
   with the right HTTP status. Don't swallow errors silently.
 - **Comments.** Default to none. Only add a comment when the *why* is non-obvious.
-- **Migrations.** Every Prisma migration ships with a `down.sql` describing the
-  inverse. Data backfills go in `backend/prisma/backfill-*.ts` scripts that are
-  idempotent and re-runnable. **Schema changes must land in both provider tracks.**
-  After editing either `backend/prisma/schema.prisma` (sqlite) or
-  `backend/prisma/postgres/schema.prisma`, run `pnpm check:schemas` to confirm the
-  two stay byte-identical outside the `datasource db {}` block, then run
-  `pnpm --filter backend migrate` under **both** `DB_PROVIDER=sqlite` and
-  `DB_PROVIDER=postgresql` so the migration folders advance together.
+- **Migrations.** Edit `prisma/schema.prisma`, regenerate the SQL with
+  `pnpm prisma:migrate:diff`, then apply with `pnpm migrate:local` (and
+  `pnpm migrate:remote` for the live D1). D1 is migrated by wrangler, not
+  `prisma migrate`.
 
 ## Commit messages
 
@@ -67,26 +68,20 @@ Types: `feat | fix | docs | style | refactor | test | chore | perf`.
 
 ## Testing
 
-There's no formal test runner today; instead we lean on:
+- `pnpm typecheck` — TypeScript across frontend, shared, and the worker.
+- `pnpm test` — frontend unit + component (vitest, jsdom).
+- `pnpm test:workers` — the Hono API against real local D1/KV/R2 (`wrangler getPlatformProxy`).
+- `pnpm test:e2e` — Playwright journeys against `wrangler pages dev`.
 
-- `pnpm typecheck` — TypeScript across all workspaces.
-- `pnpm --filter frontend build` — production bundle + service-worker generation.
-- Manual scripts:
-  - `backend/scripts/prune_test.ts` — backup retention.
-  - `backend/scripts/stress-seed.ts` — 200-person stress fixture for perf checks.
-- Browser smoke via the QA flow described in
-  [`docs/SCHEMA.md`](docs/SCHEMA.md) and the acceptance checklists.
-
-If you add a new module that has meaningful logic, drop a `*_test.ts` script in
-`backend/scripts/` or under `frontend/src/` next to the unit. Prefer the
-existing pattern (plain TS files runnable via `pnpm exec tsx`) until we adopt a
-formal test runner.
+Add or update tests in the same change as a behavior change: frontend logic →
+`tests/unit/frontend` or `tests/component`; API behavior → `tests/workers`. See
+[`tests/README.md`](tests/README.md) for the harness.
 
 ## Submitting a PR
 
 1. Fork, branch off `main`.
-2. Make the change, run `pnpm typecheck && pnpm --filter frontend build`.
-3. Update [`CHANGELOG.md`](CHANGELOG.md) under "Unreleased".
+2. Make the change, run `pnpm typecheck && pnpm test && pnpm test:workers`.
+3. Update [`CHANGELOG.md`](CHANGELOG.md).
 4. Open the PR with a short summary (what + why) and a test plan.
 
 ## Security

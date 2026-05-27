@@ -35,44 +35,44 @@ The project follows a rolling-`main` release model. Only the latest commit on
   login; other endpoints rely on operator-level protection).
 - Brute-force of weak admin passwords. Operators are responsible for rotating
   the seed `changeme` password before exposing the service.
-- Anything that requires physical access to the host or its `database/`
-  directory.
+- Anything that requires access to your Cloudflare account / dashboard (D1, R2,
+  KV, secrets) — that is the operator's trust boundary.
 
-## Known limitations of the single-process model
+## Known limitations of the KV-backed state
 
-The current implementation is a single-process Node server. Two security
-mechanisms are stored in process memory and therefore reset on every restart
-(deploy, crash, OOM kill):
+Login rate-limit counters (`ratelimit:*`) and the JWT revocation denylist
+(`denylist:*`) live in Cloudflare **KV**, which is shared across edge locations
+but **eventually consistent** (~60s):
 
-- **JWT revocation list** (`backend/src/lib/auth.ts`). Logging out adds the
-  token's `jti` to an in-memory `Set`. A restart clears the set, which means
-  a token that was explicitly logged out *before* the restart becomes valid
-  again until its natural `JWT_EXPIRES_IN` expiry. Mitigation today: keep
-  `JWT_EXPIRES_IN` reasonably short (default `7d`). Operators running a
-  multi-instance deployment must move this state to a shared store (Redis or
-  a `RevokedToken` table) before relying on logout for incident response.
-- **Login rate-limit counters** (`backend/src/lib/rateLimit.ts`). Same shape:
-  per-process `Map`. A restart wipes attempt counts; an ongoing brute-force
-  resumes from zero. The 5-per-15-min limit is still effective against a
-  steady attacker, but a determined one can amplify by triggering restarts.
+- **Logout revocation** may take up to ~60s to propagate to every PoP, so a
+  stolen token could survive that window. Each denylist entry's TTL is the
+  token's own expiry, so entries self-clean. Keep `JWT_EXPIRES_IN` reasonably
+  short (default `7d`).
+- **Login rate-limit** counts are approximate: a client spreading attempts
+  across multiple PoPs could briefly exceed the 5-per-15-min limit. The limit is
+  still effective against a steady attacker. Use Durable Objects if you need
+  strict global counting.
+- **Sliding refresh** (`/api/auth/me`) re-issues the cookie but does **not**
+  revoke the previous `jti` — a single page load can legitimately fire `/me` more
+  than once (React StrictMode, a service-worker reclaim reload, two tabs), and
+  revoking the just-rotated token would 401 the racing call and log the user out.
+  Revocation is therefore logout-only.
 
-Operators who need stronger guarantees should run the project behind a real
-auth gateway (oauth2-proxy / Cloudflare Access / etc.) until these gaps are
-closed.
+Operators who need stronger guarantees should put Cloudflare Access in front of
+the deployment.
 
 ## Deployment-time security checklist
 
-- Rotate `JWT_SECRET` to a fresh 32+ char random string before exposing the service.
-- Replace the seed `admin / changeme` password.
-- Set `NODE_ENV=production` so the auth cookie is marked `Secure`.
-- Set `TRUST_PROXY` to the number of trusted reverse-proxy hops in front of
-  the process (default `0` = direct internet exposure, ignore X-Forwarded-For).
-  An incorrect value here defeats the login rate-limit by letting clients
-  spoof their source IP.
-- If frontend and API run on different subdomains, set `COOKIE_DOMAIN` to the
-  shared parent so the auth cookie is sent on cross-subdomain requests.
-- Serve over HTTPS only. The Strict-Transport-Security header is set by
-  helmet but obviously requires TLS in front to be useful.
+- Set `JWT_SECRET` to a fresh 32+ char random string via
+  `wrangler pages secret put JWT_SECRET` — never commit it (not in `wrangler.toml`,
+  not in `.dev.vars` for production).
+- Replace the seed `admin / changeme` password (re-seed with `ADMIN_PASS`, or
+  change it via `POST /api/users`).
+- Keep `NODE_ENV=production` in `wrangler.toml [vars]` so the auth cookie is
+  marked `Secure` (Cloudflare Pages serves HTTPS by default).
+- Review the CSP in `frontend/public/_headers`. If you split the frontend and API
+  across origins, add the API origin to `connect-src` and set `CORS_ORIGIN`.
+- For a cross-subdomain frontend/API, set `COOKIE_DOMAIN` to the shared parent.
 
 ## Coordinated disclosure
 

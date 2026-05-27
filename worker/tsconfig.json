@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2022",
+    "noEmit": true,
+    "lib": ["ES2022"],
+    "types": ["@cloudflare/workers-types"],
+    "paths": {
+      "@roots/shared": ["../shared/src/index.ts"]
+    }
+  },
+  "include": ["**/*.ts", "../functions/**/*.ts"],
+  "exclude": ["node_modules"]
+}
