@@ -1,6 +1,6 @@
 # Roots of Vietnam — REST API
 
-Base URL (dev): `http://localhost:3001`
+Base URL (dev): `http://localhost:8788` (`wrangler pages dev`). Same-origin in production.
 
 Everything is JSON. Every write endpoint requires the `roots_token` httpOnly cookie set
 by `POST /api/auth/login`. Errors are `{ error: string }` with Vietnamese copy.
@@ -142,24 +142,25 @@ Accepted MIME types: `image/*`, `application/pdf`, `audio/*`, `application/mswor
 
 ### `DELETE /api/media/:id` (editor+)
 
-Removes the row and the file on disk.
+Removes the row and the object from R2.
 
 ## Backup
 
 ### `POST /api/backup` (admin)
 
-Writes `backups/backup-<ISO>.json` (schema v2) with every `Person`, `Marriage`,
-`Branch`, and `Media` row; each `Media` entry carries `sha256` of the file on
-disk. Prunes to the 10 most-recent backups. Returns `{ filename, counts, schemaVersion }`.
+Writes `backups/backup-<ISO>.json` (schema v2) to R2 with every `Person`,
+`Marriage`, `Branch`, and `Media` row; each `Media` entry carries the `sha256` of
+its R2 object. Prunes to the 10 most-recent backups. Returns
+`{ filename, counts, schemaVersion }`.
 
 ### `GET /api/backup` (admin)
 
-Lists `.json` and `.zip` files in `backups/`.
+Lists the `.json` and `.zip` backups in R2 (`backups/` prefix).
 
 ### `POST /api/backup/media-zip` (admin)
 
-Zips `uploads/` via the system `zip` binary. Returns `{ filename, sizeBytes }`.
-Requires `zip` to be on the server's `PATH`.
+Zips every uploaded media object (R2 `media/*`) into `backups/media-<ISO>.zip` via
+`jszip`. Returns `{ filename, sizeBytes }`.
 
 ### `POST /api/backup/restore` (admin)
 

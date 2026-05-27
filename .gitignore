@@ -2,6 +2,13 @@
 node_modules/
 .pnpm-store/
 
+# Generated Prisma client for D1 (regenerated on build)
+prisma/generated/
+
+# Cloudflare / wrangler local state
+.wrangler/
+d1-dev.db
+
 # Build output
 dist/
 build/
@@ -45,3 +52,9 @@ pnpm-debug.log*
 
 # Misc
 .claude/
+
+# wrangler local dev secrets
+.dev.vars
+
+# Generated seed SQL (from prisma/seed.mjs)
+prisma/seed.sql

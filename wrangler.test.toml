@@ -1,0 +1,24 @@
+# Plain Workers config used ONLY by the worker test suite via
+# wrangler getPlatformProxy(). Kept separate from wrangler.toml (a Pages config)
+# so getPlatformProxy provisions local D1/KV/R2 without Pages-specific handling.
+# All ids are local-only placeholders.
+name = "roots-test"
+compatibility_date = "2026-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "roots-test"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "test-kv-namespace"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "roots-test-media"
+
+[vars]
+JWT_EXPIRES_IN = "7d"
+NODE_ENV = "test"

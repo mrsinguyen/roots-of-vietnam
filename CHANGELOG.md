@@ -4,17 +4,39 @@ All notable changes to this project will be documented in this file. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] — Cloudflare-only
+
+**BREAKING.** The project is now a Cloudflare-native app. The Express self-host
+server, the SQLite/PostgreSQL dual-provider tracks, and Docker are removed. There
+is no upgrade path from a self-hosted 0.2.0 instance other than exporting your data
+(`POST /api/backup`) and restoring it into a fresh D1 (`POST /api/backup/restore`).
+
+### Changed / Removed
+
+- Removed the Express backend (`backend/src`), the SQLite + PostgreSQL Prisma
+  tracks + their migrations, `docker/`, and the supertest integration suite.
+- Removed deps: `express`, `cors`, `helmet`, `multer`, `cookie-parser`,
+  `jsonwebtoken`, `supertest`, `concurrently`.
+- Prisma schema promoted to `prisma/schema.prisma` (single D1 schema); `backend/`
+  workspace dropped.
 
 ### Added
 
-- **PostgreSQL support** as a parallel database provider. Set `DB_PROVIDER=postgresql`
-  + a `postgresql://…` `DATABASE_URL` to use Postgres; `DB_PROVIDER=sqlite` (default)
-  keeps the existing zero-setup SQLite path. Two `schema.prisma` files
-  (`backend/prisma/schema.prisma`, `backend/prisma/postgres/schema.prisma`) kept
-  byte-identical by `pnpm check:schemas` (chained into `pnpm test`). Test harness
-  creates a per-fork `test_<hex>` schema and drops them after the suite via
-  `tests/helpers/globalSetup.ts`.
+- **Cloudflare deployment**: React PWA on **Pages**, API as **Pages Functions**
+  (Hono on the Workers runtime), data in **D1** (Prisma 6 + `@prisma/adapter-d1`),
+  media + backups in **R2**, login rate-limit + JWT denylist in **KV**.
+- Workers-native swaps: `jose` (HS256) for JWT, `jszip` for media-zip, a standalone
+  Cron Worker (`wrangler.cron.toml`) for scheduled backups.
+- D1 migration tooling (`prisma migrate diff` → `wrangler d1 migrations apply`),
+  `prisma/seed.mjs` (admin + demo family as idempotent SQL).
+- Worker test suite (`pnpm test:workers`) against real local D1/KV/R2 via
+  `wrangler getPlatformProxy()`; E2E reworked to run against `wrangler pages dev`.
+
+### Fixed
+
+- Auth race: `/api/auth/me` sliding refresh no longer revokes the just-rotated jti,
+  so a double `/me` on a page load (StrictMode / SW reclaim / multiple tabs) can't
+  log the user out. Revocation is logout-only.
 
 ### Ideas
 
@@ -22,7 +44,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - OCR for scanned hand-written records.
 - Real-time multi-user collaboration with conflict resolution.
 - Approval workflow before a mutation lands in the public tree.
-- MySQL adapter (PostgreSQL now supported via `DB_PROVIDER=postgresql`).
 - Cemetery maps with media pinned to coordinates.
 - QR codes on profile pages for headstones.
 

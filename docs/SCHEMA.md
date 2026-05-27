@@ -1,14 +1,8 @@
 # Data model
 
-Source of truth: two parallel schema files kept byte-identical (enforced by
-`pnpm check:schemas`):
-
-- [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma) — SQLite (default)
-- [`backend/prisma/postgres/schema.prisma`](../backend/prisma/postgres/schema.prisma) — PostgreSQL
-
-The active provider is picked by the `DB_PROVIDER` env var (`sqlite` | `postgresql`).
-Both providers store enum-style fields as `TEXT`; the typed values live in
-[`shared/src/types.ts`](../shared/src/types.ts).
+Source of truth: [`prisma/schema.prisma`](../prisma/schema.prisma) — Cloudflare
+**D1** (SQLite) via Prisma 6 + `@prisma/adapter-d1`. Enum-style fields are stored
+as `TEXT`; the typed values live in [`shared/src/types.ts`](../shared/src/types.ts).
 
 ## Person
 
@@ -134,29 +128,20 @@ a Vietnamese error — preventing a person from becoming their own ancestor.
 - Marriages cascade neither on person delete nor branch delete — they're
   cleared explicitly when a person is removed.
 
-## Migrations & rollbacks
+## Migrations
 
-Each Prisma migration ships with a `down.sql` next to `migration.sql`. Prisma
-itself doesn't auto-run them; they document the inverse so an operator can
-restore a previous shape manually if needed.
+D1 is migrated by wrangler, not `prisma migrate`. Edit
+[`prisma/schema.prisma`](../prisma/schema.prisma), regenerate the SQL with
+`pnpm prisma:migrate:diff` (it runs `prisma migrate diff --from-empty
+--to-schema-datamodel … --script` into `prisma/migrations/0001_init.sql`), then
+apply it:
 
-**Dual migration tracks.** The two providers have independent migration histories:
+```bash
+pnpm migrate:local    # wrangler d1 migrations apply roots-of-vietnam --local
+pnpm migrate:remote   # … --remote
+```
 
-- SQLite: `backend/prisma/migrations/` (chain below)
-- PostgreSQL: `backend/prisma/postgres/migrations/` (single `_init` baseline today)
-
-Schema-level changes must land in both tracks. After editing either `.prisma`
-file, run `pnpm --filter backend migrate` under `DB_PROVIDER=sqlite` and again
-under `DB_PROVIDER=postgresql` against a matching dev DB so the two folders
-advance together.
-
-Current SQLite migration chain:
-
-1. `20260514035439_init` — initial schema.
-2. `20260514060855_vn_dates_names_add` — adds `nameNormalized`, `honorific`,
-   year/month/day triplets, lunar fields. Old `birthDate` / `deathDate` columns
-   kept transiently.
-3. `20260514061800_vn_dates_drop_legacy` — drops the transitional columns once
-   the TS backfill (`backend/prisma/backfill-name-normalized.ts`) has populated
-   the new ones.
-4. `20260514063000_audit_log` — adds the `AuditLog` table.
+For an additive change you can append a new numbered migration file
+(`0002_*.sql`) instead of regenerating the baseline; wrangler tracks applied
+migrations in a `d1_migrations` table. Note D1 (SQLite) `ALTER TABLE` is limited —
+column drops/renames need the table-rebuild dance.
